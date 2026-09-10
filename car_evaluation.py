@@ -1,23 +1,41 @@
-# 1. Import libraries
-
-import pandas as pd
-
-from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import LabelEncoder
+from sklearn.metrics import (
+    accuracy_score,
+    precision_score,
+    recall_score,
+    f1_score
+)
+from sklearn.ensemble import RandomForestClassifier
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.neighbors import KNeighborsClassifier
-from sklearn.ensemble import RandomForestClassifier
-from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
+from sklearn.preprocessing import LabelEncoder
+from sklearn.model_selection import train_test_split
+import seaborn as sns
+import matplotlib.pyplot as plt
+import pandas as pd
+# ============================================================
+# CAR EVALUATION USING MACHINE LEARNING
+# ============================================================
 
 
-# 2. Load the dataset
+# 1. IMPORT LIBRARIES
+
+
+# ============================================================
+# 2. LOAD DATASET
+# ============================================================
 
 df = pd.read_csv("car_evaluation.csv")
 
+print("\nFirst 5 rows:")
 print(df.head())
 
+print("\nDataset Shape:")
+print(df.shape)
 
-# 3. Give names to the columns
+
+# ============================================================
+# 3. GIVE NAMES TO THE COLUMNS
+# ============================================================
 
 df.columns = [
     "buying",
@@ -30,7 +48,17 @@ df.columns = [
 ]
 
 
-# 4. Convert text values into numbers
+# ============================================================
+# 4. CHECK MISSING VALUES
+# ============================================================
+
+print("\nMissing Values:")
+print(df.isnull().sum())
+
+
+# ============================================================
+# 5. CONVERT TEXT VALUES INTO NUMBERS
+# ============================================================
 
 encoder = LabelEncoder()
 
@@ -38,72 +66,218 @@ for column in df.columns:
     df[column] = encoder.fit_transform(df[column])
 
 
-# 5. Separate input and output
+# ============================================================
+# 6. SEPARATE FEATURES AND TARGET
+# ============================================================
 
 X = df.drop("class", axis=1)
 y = df["class"]
 
 
-# 6. Split the dataset into training and testing data
+# ============================================================
+# 7. TRAIN-TEST SPLIT
+# ============================================================
 
 X_train, X_test, y_train, y_test = train_test_split(
-    X, y, test_size=0.2, random_state=42
+    X,
+    y,
+    test_size=0.20,
+    random_state=42,
+    stratify=y
+)
+
+print("\nTraining Data:", X_train.shape)
+print("Testing Data:", X_test.shape)
+
+
+# ============================================================
+# 8. K-NEAREST NEIGHBORS
+# ============================================================
+
+knn = KNeighborsClassifier(n_neighbors=5)
+
+knn.fit(X_train, y_train)
+
+y_pred_knn = knn.predict(X_test)
+
+knn_accuracy = accuracy_score(y_test, y_pred_knn)
+knn_precision = precision_score(
+    y_test, y_pred_knn, average="weighted"
+)
+knn_recall = recall_score(
+    y_test, y_pred_knn, average="weighted"
+)
+knn_f1 = f1_score(
+    y_test, y_pred_knn, average="weighted"
 )
 
 
-# 7. Create the ML models
+# ============================================================
+# 9. DECISION TREE
+# ============================================================
 
-models = {
-    "Decision Tree": DecisionTreeClassifier(random_state=42),
-    "KNN": KNeighborsClassifier(n_neighbors=5),
-    "Random Forest": RandomForestClassifier(random_state=42)
-}
+dt = DecisionTreeClassifier(random_state=42)
 
+dt.fit(X_train, y_train)
 
-# 8. Train and evaluate each model
+y_pred_dt = dt.predict(X_test)
 
-results = []
-
-for name, model in models.items():
-
-    # Train the model
-    model.fit(X_train, y_train)
-
-    # Make predictions
-    y_pred = model.predict(X_test)
-
-    # Calculate metrics
-    accuracy = accuracy_score(y_test, y_pred)
-    precision = precision_score(y_test, y_pred, average="weighted")
-    recall = recall_score(y_test, y_pred, average="weighted")
-    f1 = f1_score(y_test, y_pred, average="weighted")
-
-    results.append([
-        name,
-        accuracy,
-        precision,
-        recall,
-        f1
-    ])
-
-
-# 9. Compare the results
-
-results_df = pd.DataFrame(
-    results,
-    columns=["Algorithm", "Accuracy", "Precision", "Recall", "F1 Score"]
+dt_accuracy = accuracy_score(y_test, y_pred_dt)
+dt_precision = precision_score(
+    y_test, y_pred_dt, average="weighted"
+)
+dt_recall = recall_score(
+    y_test, y_pred_dt, average="weighted"
+)
+dt_f1 = f1_score(
+    y_test, y_pred_dt, average="weighted"
 )
 
-print("\nPerformance Comparison:")
-print(results_df)
+
+# ============================================================
+# 10. RANDOM FOREST
+# ============================================================
+
+rf = RandomForestClassifier(
+    n_estimators=100,
+    random_state=42
+)
+
+rf.fit(X_train, y_train)
+
+y_pred_rf = rf.predict(X_test)
+
+rf_accuracy = accuracy_score(y_test, y_pred_rf)
+rf_precision = precision_score(
+    y_test, y_pred_rf, average="weighted"
+)
+rf_recall = recall_score(
+    y_test, y_pred_rf, average="weighted"
+)
+rf_f1 = f1_score(
+    y_test, y_pred_rf, average="weighted"
+)
 
 
-# 10. Find the best algorithm
+# ============================================================
+# 11. MODEL COMPARISON
+# ============================================================
 
-best_model = results_df.loc[
-    results_df["Accuracy"].idxmax()
+results = pd.DataFrame({
+
+    "Model": [
+        "KNN",
+        "Decision Tree",
+        "Random Forest"
+    ],
+
+    "Accuracy": [
+        knn_accuracy,
+        dt_accuracy,
+        rf_accuracy
+    ],
+
+    "Precision": [
+        knn_precision,
+        dt_precision,
+        rf_precision
+    ],
+
+    "Recall": [
+        knn_recall,
+        dt_recall,
+        rf_recall
+    ],
+
+    "F1 Score": [
+        knn_f1,
+        dt_f1,
+        rf_f1
+    ]
+})
+
+
+print("\n================ MODEL COMPARISON ================")
+
+print(results)
+
+
+# ============================================================
+# 12. ACCURACY COMPARISON GRAPH
+# ============================================================
+
+sns.barplot(
+    data=results,
+    x="Model",
+    y="Accuracy"
+)
+
+plt.title("Accuracy Comparison of ML Algorithms")
+plt.xlabel("Algorithm")
+plt.ylabel("Accuracy")
+plt.ylim(0, 1)
+
+plt.show()
+
+
+# ============================================================
+# 13. ALL METRICS COMPARISON GRAPH
+# ============================================================
+
+results.set_index("Model")[
+    ["Accuracy", "Precision", "Recall", "F1 Score"]
+].plot(
+    kind="bar",
+    figsize=(9, 6)
+)
+
+plt.title("Performance Comparison of ML Algorithms")
+plt.xlabel("Algorithm")
+plt.ylabel("Score")
+plt.ylim(0, 1)
+
+plt.xticks(rotation=0)
+plt.legend(title="Metrics")
+plt.tight_layout()
+
+plt.show()
+
+
+# ============================================================
+# 14. FIND BEST MODEL
+# ============================================================
+
+best_model = results.loc[
+    results["Accuracy"].idxmax()
 ]
 
-print("\nBest Performing Algorithm:")
-print(best_model["Algorithm"])
-print("Accuracy:", best_model["Accuracy"])
+
+print("\n================ BEST PERFORMING ALGORITHM ================")
+
+print("Best Algorithm :", best_model["Model"])
+print("Accuracy       :", best_model["Accuracy"])
+print("Precision      :", best_model["Precision"])
+print("Recall         :", best_model["Recall"])
+print("F1 Score       :", best_model["F1 Score"])
+
+
+# ============================================================
+# 15. CONCLUSION
+# ============================================================
+
+print("\n================ CONCLUSION ================")
+
+print(
+    "Three machine learning algorithms were applied "
+    "to the Car Evaluation dataset."
+)
+
+print(
+    "The algorithms were compared using Accuracy, "
+    "Precision, Recall and F1 Score."
+)
+
+print(
+    "The best-performing algorithm is:",
+    best_model["Model"]
+)
